@@ -3,6 +3,7 @@ const Task = require("../models/task");
 const auth = require("../middleware/auth");
 const router = new express.Router();
 
+// post new task.
 router.post("/tasks", auth, async (req, res) => {
 
   const task = new Task({
@@ -18,15 +19,26 @@ router.post("/tasks", auth, async (req, res) => {
   }
 });
 
+
+// get tasks according to query.
 router.get("/tasks", auth, async (req, res) => {
+  const match = {}
+  if(req.query.completed) {
+    match.completed = req.query.completed === 'true';
+  }
+
   try {
-    await req.user.populate('tasks').execPopulate();
+    await req.user.populate({
+      path: 'tasks',
+      match
+    });
     res.send(req.user.tasks);
   } catch (error) {
     res.status(500).send(error);
   }
 });
 
+// find a specific task
 router.get("/tasks/:id", auth, async (req, res) => {
   const _id = req.params.id;
 
@@ -40,6 +52,7 @@ router.get("/tasks/:id", auth, async (req, res) => {
   }
 });
 
+// update a task
 router.patch("/tasks/:id", auth, async (req, res) => {
   const updates = Object.keys(req.body);
   const allowedUpdates = ["description", "completed"];
@@ -67,6 +80,7 @@ router.patch("/tasks/:id", auth, async (req, res) => {
   }
 });
 
+// delete a task
 router.delete("/tasks/:id", auth, async (req, res) => {
   try {
     const task = await Task.findOneAndDelete({_id:req.params.id, owner: req.user._id});
